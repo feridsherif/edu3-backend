@@ -2,16 +2,20 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
+import { UsersService } from '../../users/users.service.js';
+import { UnauthorizedException } from '@nestjs/common';
 
 export interface JwtPayload {
   sub: string;
   email: string;
-  role: string;
 }
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(configService: ConfigService) {
+  constructor(
+    configService: ConfigService,
+    private readonly usersService: UsersService
+  ) {
     const secret = configService.get<string>('JWT_ACCESS_SECRET');
     if (!secret) {
       throw new Error('JWT_ACCESS_SECRET is not defined');
@@ -24,11 +28,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  validate(payload: JwtPayload) {
-    return {
-      id: payload.sub,
-      email: payload.email,
-      role: payload.role,
-    };
+  async validate(payload: JwtPayload) {
+    try {
+      const user = await this.usersService.findByIdWithPermissions(payload.sub);
+      
+      return {
+        id: user.id,
+        email: user.email,
+        role: user.role, // role entity with permissions attached
+      };
+    } catch {
+      throw new UnauthorizedException('User not found or unauthorized');
+    }
   }
 }
