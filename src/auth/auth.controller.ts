@@ -15,12 +15,22 @@ export class AuthController {
   @ApiOperation({ summary: 'Register a new user account' })
   @ApiResponse({
     status: 201,
-    description: 'User registered successfully',
-    type: AuthResponseDto,
+    description: 'User registered successfully. Please check your email to activate your account.',
   })
   @ApiResponse({ status: 409, description: 'Email already exists' })
-  register(@Body() registerDto: RegisterDto): Promise<AuthResponseDto> {
+  register(@Body() registerDto: RegisterDto): Promise<{ message: string }> {
     return this.authService.register(registerDto);
+  }
+
+  @Post('activate')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Activate user account using email token' })
+  @ApiResponse({
+    status: 200,
+    description: 'Account activated successfully',
+  })
+  activate(@Body('token') token: string): Promise<{ message: string }> {
+    return this.authService.activateAccount(token);
   }
 
   @Post('login')

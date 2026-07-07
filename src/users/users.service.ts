@@ -9,12 +9,14 @@ import { User } from './entities/user.entity.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import * as bcrypt from 'bcrypt';
+import { RbacService } from '../rbac/rbac.service.js';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    private readonly rbacService: RbacService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -26,12 +28,20 @@ export class UsersService {
       throw new ConflictException('A user with this email already exists');
     }
 
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 12);
+    const roleName = createUserDto.role || 'student';
+    const role = await this.rbacService.getRoleByName(roleName);
+    if (!role) {
+      throw new NotFoundException(`Role '${roleName}' not found`);
+    }
 
     const user = this.usersRepository.create({
       ...createUserDto,
-      password: hashedPassword,
+      role: role,
     });
+
+    if (createUserDto.password) {
+      user.password = await bcrypt.hash(createUserDto.password, 12);
+    }
 
     return this.usersRepository.save(user);
   }
@@ -42,6 +52,19 @@ export class UsersService {
 
   async findOne(id: string): Promise<User> {
     const user = await this.usersRepository.findOne({ where: { id } });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID "${id}" not found`);
+    }
+
+    return user;
+  }
+
+  async findByIdWithPermissions(id: string): Promise<User> {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+      relations: { role: { permissions: true } },
+    });
 
     if (!user) {
       throw new NotFoundException(`User with ID "${id}" not found`);
@@ -69,5 +92,13 @@ export class UsersService {
   async remove(id: string): Promise<void> {
     const user = await this.findOne(id);
     await this.usersRepository.remove(user);
+  }
+
+  async findByActivationToken(token: string): Promise<User | null> {
+    return this.usersRepository.findOne({ where: { activationToken: token } });
+  }
+
+  async save(user: User): Promise<User> {
+    return this.usersRepository.save(user);
   }
 }

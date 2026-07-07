@@ -4,9 +4,11 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
-import { Role } from '../../common/enums/role.enum.js';
 import { Exclude } from 'class-transformer';
+import { Role } from '../../rbac/entities/role.entity.js';
 
 @Entity('users')
 export class User {
@@ -16,9 +18,15 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column()
+  @Column({ nullable: true })
   @Exclude()
-  password: string;
+  password?: string;
+
+  @Column({ default: false })
+  isActive: boolean;
+
+  @Column({ nullable: true })
+  activationToken: string;
 
   @Column()
   firstName: string;
@@ -26,11 +34,8 @@ export class User {
   @Column()
   lastName: string;
 
-  @Column({
-    type: 'enum',
-    enum: Role,
-    default: Role.STUDENT,
-  })
+  @ManyToOne(() => Role)
+  @JoinColumn({ name: 'role_id' })
   role: Role;
 
   @CreateDateColumn()
