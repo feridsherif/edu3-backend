@@ -64,6 +64,9 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    user.lastLoginAt = new Date();
+    await this.usersService.save(user);
+
     return this.generateTokens({
       sub: user.id,
       email: user.email,
