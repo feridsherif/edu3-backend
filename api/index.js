@@ -1,4 +1,12 @@
-const { handler } = require('../dist/main.js');
+const { createApp } = require("../dist/main");
 
-module.exports = handler;
-module.exports.default = handler;
+let server;
+
+module.exports = async (req, res) => {
+  if (!server) {
+    const app = await createApp();
+    server = app.getHttpAdapter().getInstance();
+  }
+
+  return server(req, res);
+};
