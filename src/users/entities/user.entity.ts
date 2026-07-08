@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { Role } from '../../rbac/entities/role.entity.js';
+import { Department } from '../../department/entities/department.entity.js';
 
 @Entity('users')
 export class User {
@@ -37,6 +38,13 @@ export class User {
   @ManyToOne(() => Role)
   @JoinColumn({ name: 'role_id' })
   role: Role;
+
+  @ManyToOne(() => Department, { nullable: true })
+  @JoinColumn({ name: 'department_id' })
+  department?: Department;
+
+   @Column({ nullable: true, type: 'timestamp', name: 'last_login_at' })
+  lastLoginAt?: Date;
 
   @CreateDateColumn()
   createdAt: Date;
