@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { InvitationsModule } from './invitations/invitations.module.js';
 import { RbacModule } from './rbac/rbac.module.js';
+import { DepartmentsModule } from './department/department.module.js';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { RbacModule } from './rbac/rbac.module.js';
     UsersModule,
     MailModule,
     InvitationsModule,
+    DepartmentsModule,
   ],
 })
 export class AppModule {}
