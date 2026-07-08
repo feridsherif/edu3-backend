@@ -4,7 +4,7 @@ import { InvitationsService } from './invitations.service.js';
 import { InvitationsController } from './invitations.controller.js';
 import { UserInvitation } from './entities/user-invitation.entity.js';
 import { UsersModule } from '../users/users.module.js';
-import { DepartmentsModule } from '../department/department.module.js';
+import { DepartmentsModule } from '../departments/department.module.js';
 
 @Module({
   imports: [

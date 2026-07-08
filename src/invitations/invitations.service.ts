@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { UserInvitation } from './entities/user-invitation.entity.js';
 import { UsersService } from '../users/users.service.js';
 import { MailService } from '../mail/mail.service.js';
-import { DepartmentsService } from '../department/department.service.js';
+import { DepartmentsService } from '../departments/department.service.js';
 import { CreateInvitationDto } from './dto/create-invitation.dto.js';
 import { AcceptInvitationDto } from './dto/accept-invitation.dto.js';
 import * as crypto from 'crypto';
