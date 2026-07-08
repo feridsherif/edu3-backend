@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   MinLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -34,4 +35,12 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   role?: string;
+
+  @ApiPropertyOptional({
+    description: 'Department ID (required for instructor and curriculum_manager roles)',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsUUID()
+  @IsOptional()
+  departmentId?: string;
 }
