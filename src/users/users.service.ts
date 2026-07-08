@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -34,9 +35,15 @@ export class UsersService {
       throw new NotFoundException(`Role '${roleName}' not found`);
     }
 
+    const rolesRequiringDept = ['instructor', 'curriculum_manager'];
+if (rolesRequiringDept.includes(roleName) && !createUserDto.departmentId) {
+  throw new BadRequestException(`Department is required for ${roleName}`);
+}
+
     const user = this.usersRepository.create({
       ...createUserDto,
       role: role,
+      department: createUserDto.departmentId ? { id: createUserDto.departmentId } : undefined,
     });
 
     if (createUserDto.password) {
@@ -47,11 +54,15 @@ export class UsersService {
   }
 
   async findAll(): Promise<User[]> {
-    return this.usersRepository.find();
+    return this.usersRepository.find({
+      relations: { role: { permissions: true } },
+    });
   }
 
   async findOne(id: string): Promise<User> {
-    const user = await this.usersRepository.findOne({ where: { id } });
+    const user = await this.usersRepository.findOne({ where: { id } ,
+     relations: { role:{permissions:true}}
+    });
 
     if (!user) {
       throw new NotFoundException(`User with ID "${id}" not found`);
@@ -63,7 +74,7 @@ export class UsersService {
   async findByIdWithPermissions(id: string): Promise<User> {
     const user = await this.usersRepository.findOne({
       where: { id },
-      relations: { role: { permissions: true } },
+      relations: { role: { permissions: true }, department: true },
     });
 
     if (!user) {
