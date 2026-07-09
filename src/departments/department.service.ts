@@ -2,14 +2,16 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Department } from './entities/department.entity';
-import { User } from '../users/entities/user.entity'
+import { User } from '../users/entities/user.entity';
 import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
 import { UpdateDepartmentStatusDto } from './dto/update-department-status.dto';
+import { AuditLogService } from '../common/services/audit-log.service';
 
 // Matches the shape PermissionsGuard expects: user.role.permissions is an
 // array of { code: string } objects, not a flat array on the user itself.
@@ -17,6 +19,7 @@ export interface AuthUser {
   id: string;
   departmentId: string | null;
   role: {
+    name?: string;
     permissions: { code: string }[];
   };
 }
@@ -32,7 +35,10 @@ export class DepartmentsService {
     private readonly departmentRepo: Repository<Department>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-  ) {}
+    private readonly auditLogService: AuditLogService,
+  ) { }
+
+  // ── Create ──────────────────────────────────────────────────────────────────
 
   async create(dto: CreateDepartmentDto, actor: AuthUser): Promise<Department> {
     await this.assertUnique(dto.name, dto.code);
@@ -42,27 +48,70 @@ export class DepartmentsService {
       code: dto.code,
       description: dto.description ?? null,
       createdBy: { id: actor.id } as any,
+    
     });
 
-    return this.departmentRepo.save(department);
+    const saved = await this.departmentRepo.save(department);
+
+    await this.auditLogService.log({
+      action: 'department.create',
+      resourceType: 'department',
+      resourceId: saved.id,
+      actorId: actor.id,
+      payload: { name: saved.name, code: saved.code },
+    });
+
+    return saved;
   }
 
-  async update(id: string, dto: UpdateDepartmentDto): Promise<Department> {
+  // ── Update ──────────────────────────────────────────────────────────────────
+
+  async update(id: string, dto: UpdateDepartmentDto, actor: AuthUser): Promise<Department> {
     const department = await this.findOrFail(id);
 
     if (dto.name || dto.code) {
-      await this.assertUnique(dto.name ?? department.name, dto.code ?? department.code, id);
+      await this.assertUnique(
+        dto.name ?? department.name,
+        dto.code ?? department.code,
+        id,
+      );
     }
 
+    const before = { name: department.name, code: department.code, description: department.description };
     Object.assign(department, dto);
-    return this.departmentRepo.save(department);
+    const saved = await this.departmentRepo.save(department);
+
+    await this.auditLogService.log({
+      action: 'department.update',
+      resourceType: 'department',
+      resourceId: id,
+      actorId: actor.id,
+      payload: { before, after: { name: saved.name, code: saved.code, description: saved.description } },
+    });
+
+    return saved;
   }
 
-  async updateStatus(id: string, dto: UpdateDepartmentStatusDto): Promise<Department> {
+  // ── Toggle Status ────────────────────────────────────────────────────────────
+
+  async updateStatus(id: string, dto: UpdateDepartmentStatusDto, actor: AuthUser): Promise<Department> {
     const department = await this.findOrFail(id);
+    const previous = department.isActive;
     department.isActive = dto.isActive;
-    return this.departmentRepo.save(department);
+    const saved = await this.departmentRepo.save(department);
+
+    await this.auditLogService.log({
+      action: 'department.status.update',
+      resourceType: 'department',
+      resourceId: id,
+      actorId: actor.id,
+      payload: { previousStatus: previous, newStatus: dto.isActive },
+    });
+
+    return saved;
   }
+
+  // ── Read ─────────────────────────────────────────────────────────────────────
 
   async findAll(actor: AuthUser): Promise<Department[]> {
     if (hasPermission(actor, 'department.view.all')) {
@@ -84,6 +133,28 @@ export class DepartmentsService {
     await this.findOrFail(id);
     return this.userRepo.find({ where: { departmentId: id } as any });
   }
+
+  // ── Shared guard for other modules ───────────────────────────────────────────
+
+  /**
+   * Called by UsersService and CoursesService when assigning a department.
+   * Throws if the department doesn't exist OR is inactive.
+   * Business rule: "Inactive departments cannot receive new instructors / CMs / courses."
+   */
+  async assertActive(departmentId: string): Promise<Department> {
+    const dept = await this.departmentRepo.findOne({ where: { id: departmentId } });
+    if (!dept) {
+      throw new NotFoundException(`Department ${departmentId} not found`);
+    }
+    if (!dept.isActive) {
+      throw new BadRequestException(
+        'Cannot assign to an inactive department. Reactivate the department first.',
+      );
+    }
+    return dept;
+  }
+
+  // ── Private helpers ───────────────────────────────────────────────────────────
 
   private async findOrFail(id: string): Promise<Department> {
     const department = await this.departmentRepo.findOne({ where: { id } });
