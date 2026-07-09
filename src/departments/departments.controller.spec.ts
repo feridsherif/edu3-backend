@@ -86,8 +86,8 @@ describe('DepartmentsController', () => {
       const expectedResult = { id, ...dto };
       mockService.update.mockResolvedValue(expectedResult);
 
-      const result = await controller.update(id, dto);
-      expect(mockService.update).toHaveBeenCalledWith(id, dto);
+      const result = await controller.update(id, dto, mockActor);
+      expect(mockService.update).toHaveBeenCalledWith(id, dto, mockActor);
       expect(result).toEqual(expectedResult);
     });
   });
@@ -99,8 +99,8 @@ describe('DepartmentsController', () => {
       const expectedResult = { id, isActive: false };
       mockService.updateStatus.mockResolvedValue(expectedResult);
 
-      const result = await controller.updateStatus(id, dto);
-      expect(mockService.updateStatus).toHaveBeenCalledWith(id, dto);
+      const result = await controller.updateStatus(id, dto, mockActor);
+      expect(mockService.updateStatus).toHaveBeenCalledWith(id, dto, mockActor);
       expect(result).toEqual(expectedResult);
     });
   });
