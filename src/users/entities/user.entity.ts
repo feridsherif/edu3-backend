@@ -8,8 +8,8 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
-import { Role } from '../../rbac/entities/role.entity.js';
-import { Department } from '../../departments/entities/department.entity.js';
+import { Role } from '../../rbac/entities/role.entity';
+import { Department } from '../../departments/entities/department.entity';
 
 @Entity('users')
 export class User {
