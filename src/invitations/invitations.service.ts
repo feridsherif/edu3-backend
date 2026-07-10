@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { UserInvitation } from './entities/user-invitation.entity.js';
 import { UsersService } from '../users/users.service.js';
 import { MailService } from '../mail/mail.service.js';
+import { DepartmentsService } from '../departments/department.service.js';
 import { CreateInvitationDto } from './dto/create-invitation.dto.js';
 import { AcceptInvitationDto } from './dto/accept-invitation.dto.js';
 import * as crypto from 'crypto';
@@ -16,6 +17,7 @@ export class InvitationsService {
     private readonly invitationRepository: Repository<UserInvitation>,
     private readonly usersService: UsersService,
     private readonly mailService: MailService,
+    private readonly departmentsService: DepartmentsService,
   ) {}
 
   async createInvitation(dto: CreateInvitationDto) {
@@ -24,11 +26,25 @@ export class InvitationsService {
       throw new ConflictException('User already exists');
     }
 
+    const rolesRequiringDepartment = ['instructor', 'curriculum_manager'];
+if (rolesRequiringDepartment.includes(dto.role) && !dto.departmentId) {
+  throw new BadRequestException(`Department is required for role ${dto.role}`);
+}
+
+// If departmentId is provided, verify it exists and is active
+if (dto.departmentId) {
+  const department = await this.departmentsService.findOne(dto.departmentId);
+  if (!department || !department.isActive) {
+    throw new BadRequestException('Invalid or inactive department');
+  }
+}
+
     user = await this.usersService.create({
       email: dto.email,
       firstName: dto.firstName,
       lastName: dto.lastName,
       role: dto.role,
+      departmentId: dto.departmentId,
     });
 
     const token = crypto.randomBytes(32).toString('hex');

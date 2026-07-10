@@ -13,7 +13,7 @@ export class MailService {
   constructor(private readonly mailerService: MailerService,
     private readonly configService: ConfigService
   ) {
-    this.host = this.configService.get('HOST');
+    this.host = this.configService.get<string>('HOST') ?? '';
   }
 
   async sendStudentActivation(user: User, token: string): Promise<void> {

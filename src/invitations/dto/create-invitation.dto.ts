@@ -1,5 +1,5 @@
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateInvitationDto {
   @ApiProperty({ example: 'instructor@example.com' })
@@ -17,8 +17,16 @@ export class CreateInvitationDto {
   @IsNotEmpty()
   lastName: string;
 
-  @ApiProperty({ example: 'instructor' })
+  @ApiProperty({ example: 'instructor', enum: ['instructor', 'curriculum_manager', 'student', 'admin'] })
   @IsString()
   @IsNotEmpty()
   role: string;
+
+  @ApiPropertyOptional({
+    description: 'Department ID (required for instructor and curriculum_manager roles)',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsUUID()
+  @IsOptional()
+  departmentId?: string;
 }
