@@ -1,0 +1,4 @@
+export const BLOCKCHAIN_MODULE_OPTIONS = 'BLOCKCHAIN_MODULE_OPTIONS';
+export const BLOCKCHAIN_NETWORK = process.env.BLOCKCHAIN_NETWORK || 'polygon-amoy';
+export const BLOCKCHAIN_CONTRACT_ADDRESS = process.env.BLOCKCHAIN_CONTRACT_ADDRESS || '0x0000000000000000000000000000000000000000';
+export const BLOCKCHAIN_RPC_URL = process.env.BLOCKCHAIN_RPC_URL || 'https://rpc-amoy.polygon.technology/';

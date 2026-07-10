@@ -28,6 +28,34 @@ class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   JWT_REFRESH_EXPIRATION: string;
+
+  @IsString()
+  @IsOptional()
+  REDIS_HOST?: string;
+
+  @IsString()
+  @IsOptional()
+  REDIS_PORT?: string;
+
+  @IsString()
+  @IsOptional()
+  BLOCKCHAIN_NETWORK?: string;
+
+  @IsString()
+  @IsOptional()
+  BLOCKCHAIN_RPC_URL?: string;
+
+  @IsString()
+  @IsOptional()
+  BLOCKCHAIN_CONTRACT_ADDRESS?: string;
+
+  @IsString()
+  @IsOptional()
+  BLOCKCHAIN_WALLET_ADDRESS?: string;
+
+  @IsString()
+  @IsOptional()
+  BLOCKCHAIN_PRIVATE_KEY?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

@@ -4,6 +4,7 @@ import { User } from './users/entities/user.entity';
 import { Role } from './rbac/entities/role.entity';
 import { Permission } from './rbac/entities/permission.entity';
 import { Department } from './departments/entities/department.entity';
+import { BlockchainTransaction } from './blockchain/entities/blockchain-transaction.entity';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
@@ -15,7 +16,7 @@ export const AppDataSource = new DataSource({
   url: process.env.DATABASE_URL,
   synchronize: false, // MUST be false in production
   logging: true,
-  entities: [User, Role, Permission, Department, ],
+  entities: [User, Role, Permission, Department, BlockchainTransaction],
   migrations: ['dist/migrations/*.js'],
   migrationsTableName: 'migrations',
 });
