@@ -17,7 +17,6 @@ async function createApp(): Promise<NestExpressApplication> {
     AppModule,
     new ExpressAdapter(),
   );
-
   app.setGlobalPrefix('api/v1');
 
   app.enableCors({
