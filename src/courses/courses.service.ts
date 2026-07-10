@@ -14,15 +14,24 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 import { slugify } from '../common/utils/slugify';
 import { DepartmentsService } from '../departments/department.service';
 import { AuditLogService } from '../common/services/audit-log.service';
+import { Chapter } from '../curriculum/entities/chapter.entity';
+import { Lesson } from '../curriculum/entities/lesson.entity';
+import { Quiz } from '../curriculum/entities/quiz.entity';
 
 @Injectable()
 export class CoursesService {
   constructor(
     @InjectRepository(Course)
     private readonly courseRepository: Repository<Course>,
+    @InjectRepository(Chapter)
+    private readonly chapterRepository: Repository<Chapter>,
+    @InjectRepository(Lesson)
+    private readonly lessonRepository: Repository<Lesson>,
+    @InjectRepository(Quiz)
+    private readonly quizRepository: Repository<Quiz>,
     private readonly departmentsService: DepartmentsService,
     private readonly auditLogService: AuditLogService,
-  ) {}
+  ) { }
 
   async create(createDto: CreateCourseDto, instructorId: string): Promise<Course> {
     // Check if title already exists (within department)
@@ -191,7 +200,36 @@ export class CoursesService {
       throw new BadRequestException('Course must be Draft or Rejected to be submitted');
     }
 
-    // Check minimum content - simplified check since chapters/lessons are in Mod-005
+    // CRS-004: Minimum content validation – at least 1 chapter, 1 lesson, and 1 quiz
+    const chapters = await this.chapterRepository.find({ where: { courseId: id } });
+    const chapterCount = chapters.length;
+
+    if (chapterCount === 0) {
+      throw new BadRequestException(
+        'Course must have at least one chapter before it can be submitted for review',
+      );
+    }
+
+    const chapterIds = chapters.map((c) => c.id);
+    let lessonCount = 0;
+    for (const chapterId of chapterIds) {
+      const count = await this.lessonRepository.count({ where: { chapterId } });
+      lessonCount += count;
+    }
+
+    if (lessonCount === 0) {
+      throw new BadRequestException(
+        'Course must have at least one lesson before it can be submitted for review',
+      );
+    }
+
+    const quizCount = await this.quizRepository.count({ where: { courseId: id } });
+    if (quizCount === 0) {
+      throw new BadRequestException(
+        'Course must have at least one quiz before it can be submitted for review',
+      );
+    }
+
     const previousStatus = course.status;
     course.status = CourseStatus.PENDING_REVIEW;
     const saved = await this.courseRepository.save(course);
@@ -205,6 +243,9 @@ export class CoursesService {
       payload: {
         previousStatus,
         newStatus: CourseStatus.PENDING_REVIEW,
+        chapterCount,
+        lessonCount,
+        quizCount,
       },
     });
 
