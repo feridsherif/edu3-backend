@@ -9,7 +9,7 @@ import { Repository } from 'typeorm';
 import { User } from './entities/user.entity.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from '../utils/bcrypt';
 import { RbacService } from '../rbac/rbac.service.js';
 
 @Injectable()

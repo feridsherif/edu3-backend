@@ -10,6 +10,8 @@ import { InvitationsModule } from './invitations/invitations.module.js';
 import { RbacModule } from './rbac/rbac.module.js';
 import { DepartmentsModule } from './departments/department.module.js';
 import { CommonModule } from './common/common.module.js';
+import { AppController } from './app.controller.js';
+import { AppService } from './app.service.js';
 
 @Module({
   imports: [
@@ -26,5 +28,7 @@ import { CommonModule } from './common/common.module.js';
     InvitationsModule,
     DepartmentsModule,
   ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule { }
