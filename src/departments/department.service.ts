@@ -5,9 +5,11 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { plainToInstance } from 'class-transformer';
 import { Repository } from 'typeorm';
 import { Department } from './entities/department.entity';
 import { User } from '../users/entities/user.entity';
+import { UserResponseDto } from 'src/users/dto/user-response.dto';
 import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
 import { UpdateDepartmentStatusDto } from './dto/update-department-status.dto';
@@ -132,9 +134,10 @@ export class DepartmentsService {
     return this.findOrFail(id);
   }
 
-  async findMembers(id: string): Promise<User[]> {
+  async findMembers(id: string): Promise<UserResponseDto[]> {
     await this.findOrFail(id);
-    return this.userRepo.find({ where: { departmentId: id } as any });
+    const users = await this.userRepo.find({ where: { department: {id} } as any });
+  return plainToInstance(UserResponseDto, users);
   }
 
   // ── Shared guard for other modules ───────────────────────────────────────────

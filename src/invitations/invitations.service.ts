@@ -8,7 +8,7 @@ import { DepartmentsService } from '../departments/department.service.js';
 import { CreateInvitationDto } from './dto/create-invitation.dto.js';
 import { AcceptInvitationDto } from './dto/accept-invitation.dto.js';
 import * as crypto from 'crypto';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from '../utils/bcrypt';
 
 @Injectable()
 export class InvitationsService {

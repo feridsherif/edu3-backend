@@ -67,7 +67,20 @@ export class RbacService implements OnModuleInit {
 
       // Curriculum
       { name: 'Create Chapter', code: 'chapter.create' },
+      { name: 'Update Chapter', code: 'chapter.update' },
+      { name: 'Delete Chapter', code: 'chapter.delete' },
       { name: 'Create Lesson', code: 'lesson.create' },
+      { name: 'Update Lesson', code: 'lesson.update' },
+      { name: 'Delete Lesson', code: 'lesson.delete' },
+      { name: 'Complete Lesson', code: 'lesson.complete' },
+      { name: 'Create Quiz', code: 'quiz.create' },
+      { name: 'Update Quiz', code: 'quiz.update' },
+      { name: 'Delete Quiz', code: 'quiz.delete' },
+      { name: 'Add Question', code: 'question.create' },
+      { name: 'Update Question', code: 'question.update' },
+      { name: 'Delete Question', code: 'question.delete' },
+      { name: 'Submit Quiz', code: 'quiz.submit' },
+      { name: 'View Progress', code: 'progress.view' },
     ];
 
     const permissionMap: Record<string, Permission> = {};
@@ -93,42 +106,48 @@ export class RbacService implements OnModuleInit {
 
 
     const rolesData = [
-      {
-        name: 'Admin',
-        description: 'System Administrator – full access',
-        permissionCodes: permissionDefinitions.map(p => p.code),
-      },
-      {
-        name: 'Instructor',
-        description: 'Course Instructor',
-        permissionCodes: [
-          'profile.view', 'profile.update',
-          'course.create', 'course.update', 'course.delete', 'course.submit',
-          'course.publish', 'course.availability.update', 'course.view',
-          'department.view',
-          'user.view',
-          'chapter.create', 'lesson.create',
-        ],
-      },
-      {
-        name: 'Curriculum Manager',
-        description: 'Curriculum Supervisor – reviews and approves courses',
-        permissionCodes: [
-          'profile.view', 'profile.update',
-          'course.view', 'course.review', 'course.approve', 'course.reject',
-          'department.view', 'department.members.view',
-          'user.view',
-        ],
-      },
-      {
-        name: 'Student',
-        description: 'Registered Student',
-        permissionCodes: [
-          'profile.view', 'profile.update',
-          'course.view',
-        ],
-      },
-    ];
+  {
+    name: 'Admin',
+    description: 'System Administrator – full access',
+    permissionCodes: permissionDefinitions.map(p => p.code),
+  },
+  {
+    name: 'Instructor',
+    description: 'Course Instructor',
+    permissionCodes: [
+      'profile.view', 'profile.update',
+      'course.create', 'course.update', 'course.delete', 'course.submit',
+      'course.publish', 'course.availability.update', 'course.view',
+      'department.view',
+      'user.view',
+      'chapter.create', 'chapter.update', 'chapter.delete',
+      'lesson.create', 'lesson.update', 'lesson.delete',
+      'quiz.create', 'quiz.update', 'quiz.delete',
+      'question.create', 'question.update', 'question.delete',
+    ],
+  },
+  {
+    name: 'Curriculum Manager',
+    description: 'Curriculum Supervisor – reviews and approves courses',
+    permissionCodes: [
+      'profile.view', 'profile.update',
+      'course.view', 'course.review', 'course.approve', 'course.reject',
+      'department.view', 'department.members.view',
+      'user.view',
+    ],
+  },
+  {
+    name: 'Student',
+    description: 'Registered Student',
+    permissionCodes: [
+      'profile.view', 'profile.update',
+      'course.view',
+      'lesson.complete',
+      'quiz.submit',
+      'progress.view',
+    ],
+  },
+];
 
 
     for (const rData of rolesData) {
