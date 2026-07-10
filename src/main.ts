@@ -8,7 +8,7 @@ import type { NextFunction, Request, Response } from 'express';
 
 let cachedApp: NestExpressApplication | undefined;
 
-async function createApp(): Promise<NestExpressApplication> {
+export async function createApp(): Promise<NestExpressApplication> {
   if (cachedApp) {
     return cachedApp;
   }
@@ -46,7 +46,36 @@ async function createApp(): Promise<NestExpressApplication> {
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, document);
+
+  // Serve OpenAPI JSON and a CDN-backed Swagger UI to avoid serving static assets
+  const instance = app.getHttpAdapter().getInstance();
+  instance.get('/api/v1/openapi.json', (_req, res) => res.json(document));
+
+  const swaggerHtml = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>API Docs</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@4/swagger-ui.css" />
+  </head>
+  <body>
+    <div id="swagger-ui"></div>
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@4/swagger-ui-bundle.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@4/swagger-ui-standalone-preset.js"></script>
+    <script>
+      window.onload = function() {
+        SwaggerUIBundle({
+          url: '/api/v1/openapi.json',
+          dom_id: '#swagger-ui',
+          presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+          layout: 'StandaloneLayout'
+        });
+      };
+    </script>
+  </body>
+</html>`;
+
+  instance.get('/api/v1/docs', (_req, res) => res.type('text/html').send(swaggerHtml));
 
   await app.init();
   cachedApp = app;

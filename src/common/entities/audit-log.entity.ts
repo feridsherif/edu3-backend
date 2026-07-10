@@ -25,6 +25,9 @@ export class AuditLog {
     @Column({ type: 'uuid', nullable: true, name: 'resource_id' })
     resourceId: string | null;
 
+    @Column({ type: 'varchar', length: 255, nullable: true, name: 'resource_name' })
+    resourceName: string | null;
+
 
     @Column({ type: 'json', nullable: true })
     payload: Record<string, unknown> | null;
