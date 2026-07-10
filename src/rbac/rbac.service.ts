@@ -14,7 +14,7 @@ export class RbacService implements OnModuleInit {
     private readonly roleRepository: Repository<Role>,
     @InjectRepository(Permission)
     private readonly permissionRepository: Repository<Permission>,
-  ) {}
+  ) { }
 
   async onModuleInit() {
     this.logger.log('Seeding default roles and permissions...');
@@ -22,15 +22,15 @@ export class RbacService implements OnModuleInit {
   }
 
 
-async findAllRoles(): Promise<Role[]> {
-  return this.roleRepository.find({
-    relations: { permissions: true },
-    order: { name: 'ASC' },
-  });
-}
+  async findAllRoles(): Promise<Role[]> {
+    return this.roleRepository.find({
+      relations: { permissions: true },
+      order: { name: 'ASC' },
+    });
+  }
 
   private async seed() {
-    
+
     const permissionDefinitions = [
       // Profile
       { name: 'View Profile', code: 'profile.view' },
@@ -72,14 +72,14 @@ async findAllRoles(): Promise<Role[]> {
 
     const permissionMap: Record<string, Permission> = {};
 
-    
+
     for (const def of permissionDefinitions) {
       let perm = await this.permissionRepository.findOne({
         where: { code: def.code },
       });
 
       if (perm) {
-        
+
         if (perm.name !== def.name) {
           perm.name = def.name;
           await this.permissionRepository.save(perm);
@@ -91,7 +91,7 @@ async findAllRoles(): Promise<Role[]> {
       permissionMap[def.code] = perm;
     }
 
-   
+
     const rolesData = [
       {
         name: 'Admin',
@@ -104,7 +104,7 @@ async findAllRoles(): Promise<Role[]> {
         permissionCodes: [
           'profile.view', 'profile.update',
           'course.create', 'course.update', 'course.delete', 'course.submit',
-          'course.publish', 'course.view',
+          'course.publish', 'course.availability.update', 'course.view',
           'department.view',
           'user.view',
           'chapter.create', 'lesson.create',
@@ -130,7 +130,7 @@ async findAllRoles(): Promise<Role[]> {
       },
     ];
 
-    
+
     for (const rData of rolesData) {
       let role = await this.roleRepository.findOne({
         where: { name: rData.name },

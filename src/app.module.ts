@@ -6,10 +6,11 @@ import { validate } from './config/env.validation.js';
 import { AuthModule } from './auth/auth.module.js';
 import { UsersModule } from './users/users.module.js';
 import { MailModule } from './mail/mail.module.js';
-import { InvitationsModule } from './invitations/invitations.module.js';
+import { InvitationsModule } from './invitations/invitations.module';
 import { RbacModule } from './rbac/rbac.module.js';
-import { DepartmentsModule } from './departments/department.module.js';
-import { CommonModule } from './common/common.module.js';
+import { DepartmentsModule } from './departments/department.module';
+import { CommonModule } from './common/common.module';
+import { CoursesModule } from './courses/courses.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { CommonModule } from './common/common.module.js';
     MailModule,
     InvitationsModule,
     DepartmentsModule,
+    CoursesModule,
   ],
 })
 export class AppModule { }
