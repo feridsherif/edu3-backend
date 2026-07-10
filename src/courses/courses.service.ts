@@ -4,6 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
@@ -12,6 +13,7 @@ import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { slugify } from '../common/utils/slugify';
 import { DepartmentsService } from '../departments/department.service';
+import { AuditLogService } from '../common/services/audit-log.service';
 
 @Injectable()
 export class CoursesService {
@@ -19,7 +21,8 @@ export class CoursesService {
     @InjectRepository(Course)
     private readonly courseRepository: Repository<Course>,
     private readonly departmentsService: DepartmentsService,
-  ) { }
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   async create(createDto: CreateCourseDto, instructorId: string): Promise<Course> {
     // Check if title already exists (within department)
@@ -49,7 +52,22 @@ export class CoursesService {
       isActive: false,
     });
 
-    return this.courseRepository.save(course);
+    const saved = await this.courseRepository.save(course);
+
+    await this.auditLogService.log({
+      action: 'course.create',
+      resourceType: 'course',
+      resourceId: saved.id,
+      resourceName: saved.title,
+      actorId: instructorId,
+      payload: {
+        title: saved.title,
+        departmentId: saved.departmentId,
+        difficultyLevel: saved.difficultyLevel,
+      },
+    });
+
+    return saved;
   }
 
   async findAll(user: any) {
@@ -97,6 +115,15 @@ export class CoursesService {
       throw new BadRequestException('Course can only be updated if it is Draft or Rejected');
     }
 
+    const before = {
+      title: course.title,
+      shortDescription: course.shortDescription,
+      description: course.description,
+      difficultyLevel: course.difficultyLevel,
+      estimatedDuration: course.estimatedDuration,
+      language: course.language,
+    };
+
     if (updateDto.title && updateDto.title !== course.title) {
       const existing = await this.courseRepository.findOne({
         where: { title: updateDto.title, departmentId: course.departmentId },
@@ -108,7 +135,28 @@ export class CoursesService {
     }
 
     Object.assign(course, updateDto);
-    return this.courseRepository.save(course);
+    const saved = await this.courseRepository.save(course);
+
+    await this.auditLogService.log({
+      action: 'course.update',
+      resourceType: 'course',
+      resourceId: id,
+      resourceName: saved.title,
+      actorId: user.id,
+      payload: {
+        before,
+        after: {
+          title: saved.title,
+          shortDescription: saved.shortDescription,
+          description: saved.description,
+          difficultyLevel: saved.difficultyLevel,
+          estimatedDuration: saved.estimatedDuration,
+          language: saved.language,
+        },
+      },
+    });
+
+    return saved;
   }
 
   async remove(id: string, user: any): Promise<void> {
@@ -119,8 +167,19 @@ export class CoursesService {
     if (course.status !== CourseStatus.DRAFT) {
       throw new BadRequestException('Only Draft courses can be deleted');
     }
+
+    const courseTitle = course.title;
     course.deletedAt = new Date();
     await this.courseRepository.save(course);
+
+    await this.auditLogService.log({
+      action: 'course.delete',
+      resourceType: 'course',
+      resourceId: id,
+      resourceName: courseTitle,
+      actorId: user.id,
+      payload: { deletedAt: course.deletedAt },
+    });
   }
 
   async submitForReview(id: string, user: any): Promise<Course> {
@@ -133,8 +192,23 @@ export class CoursesService {
     }
 
     // Check minimum content - simplified check since chapters/lessons are in Mod-005
+    const previousStatus = course.status;
     course.status = CourseStatus.PENDING_REVIEW;
-    return this.courseRepository.save(course);
+    const saved = await this.courseRepository.save(course);
+
+    await this.auditLogService.log({
+      action: 'course.submit',
+      resourceType: 'course',
+      resourceId: id,
+      resourceName: saved.title,
+      actorId: user.id,
+      payload: {
+        previousStatus,
+        newStatus: CourseStatus.PENDING_REVIEW,
+      },
+    });
+
+    return saved;
   }
 
   async review(id: string, user: any): Promise<Course> {
@@ -145,6 +219,18 @@ export class CoursesService {
     if (course.status !== CourseStatus.PENDING_REVIEW) {
       throw new BadRequestException('Course is not pending review');
     }
+
+    await this.auditLogService.log({
+      action: 'course.review',
+      resourceType: 'course',
+      resourceId: id,
+      resourceName: course.title,
+      actorId: user.id,
+      payload: {
+        status: course.status,
+      },
+    });
+
     return course;
   }
 
@@ -157,11 +243,27 @@ export class CoursesService {
       throw new ConflictException('Can only approve courses within your department');
     }
 
+    const previousStatus = course.status;
     course.status = CourseStatus.APPROVED;
     course.approvedById = user.id;
     course.approvedAt = new Date();
 
-    return this.courseRepository.save(course);
+    const saved = await this.courseRepository.save(course);
+
+    await this.auditLogService.log({
+      action: 'course.approve',
+      resourceType: 'course',
+      resourceId: id,
+      resourceName: saved.title,
+      actorId: user.id,
+      payload: {
+        previousStatus,
+        newStatus: CourseStatus.APPROVED,
+        approvedAt: saved.approvedAt,
+      },
+    });
+
+    return saved;
   }
 
   async reject(id: string, comments: string, user: any): Promise<Course> {
@@ -176,10 +278,26 @@ export class CoursesService {
       throw new ConflictException('Can only reject courses within your department');
     }
 
+    const previousStatus = course.status;
     course.status = CourseStatus.REJECTED;
     course.rejectionComments = comments;
 
-    return this.courseRepository.save(course);
+    const saved = await this.courseRepository.save(course);
+
+    await this.auditLogService.log({
+      action: 'course.reject',
+      resourceType: 'course',
+      resourceId: id,
+      resourceName: saved.title,
+      actorId: user.id,
+      payload: {
+        previousStatus,
+        newStatus: CourseStatus.REJECTED,
+        comments,
+      },
+    });
+
+    return saved;
   }
 
   async publish(id: string, user: any): Promise<Course> {
@@ -191,10 +309,26 @@ export class CoursesService {
       throw new ConflictException('Only the instructor or admin can publish this course');
     }
 
+    const previousStatus = course.status;
     course.status = CourseStatus.PUBLISHED;
     course.publishedAt = new Date();
 
-    return this.courseRepository.save(course);
+    const saved = await this.courseRepository.save(course);
+
+    await this.auditLogService.log({
+      action: 'course.publish',
+      resourceType: 'course',
+      resourceId: id,
+      resourceName: saved.title,
+      actorId: user.id,
+      payload: {
+        previousStatus,
+        newStatus: CourseStatus.PUBLISHED,
+        publishedAt: saved.publishedAt,
+      },
+    });
+
+    return saved;
   }
 
   async toggleAvailability(id: string, isActive: boolean, user: any): Promise<Course> {
@@ -206,8 +340,23 @@ export class CoursesService {
       throw new ConflictException('Only the instructor or admin can toggle availability');
     }
 
+    const previousAvailability = course.isActive;
     course.isActive = isActive;
-    return this.courseRepository.save(course);
-  }
 
+    const saved = await this.courseRepository.save(course);
+
+    await this.auditLogService.log({
+      action: 'course.availability.update',
+      resourceType: 'course',
+      resourceId: id,
+      resourceName: saved.title,
+      actorId: user.id,
+      payload: {
+        previousAvailability,
+        newAvailability: isActive,
+      },
+    });
+
+    return saved;
+  }
 }
