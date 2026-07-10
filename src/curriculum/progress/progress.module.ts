@@ -6,11 +6,13 @@ import { ProgressTracking } from '../entities/progress-tracking.entity';
 import { QuizAttempt } from '../entities/quiz-attempt.entity';
 import { Lesson } from '../entities/lesson.entity';
 import { Quiz } from '../entities/quiz.entity';
+import { Chapter } from '../entities/chapter.entity';
 import { Course } from '../../courses/entities/course.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ProgressTracking, QuizAttempt, Lesson, Quiz, Course])],
+  imports: [TypeOrmModule.forFeature([ProgressTracking, QuizAttempt, Lesson, Quiz, Chapter, Course])],
   controllers: [ProgressController],
-  providers: [ProgressService]
+  providers: [ProgressService],
+  exports: [ProgressService],
 })
-export class ProgressModule {}
+export class ProgressModule { }
