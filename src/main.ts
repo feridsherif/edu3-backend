@@ -8,7 +8,7 @@ import type { NextFunction, Request, Response } from 'express';
 
 let cachedApp: NestExpressApplication | undefined;
 
-async function createApp(): Promise<NestExpressApplication> {
+export async function createApp(): Promise<NestExpressApplication> {
   if (cachedApp) {
     return cachedApp;
   }
