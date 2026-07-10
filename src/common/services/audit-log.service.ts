@@ -15,6 +15,7 @@ export class AuditLogService {
         resourceType: string;
         resourceId: string | null;
         actorId: string | null;
+        resourceName?: string | null;
         payload?: Record<string, unknown>;
     }): Promise<void> {
         const entry = this.auditRepo.create({
