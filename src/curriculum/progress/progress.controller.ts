@@ -28,7 +28,7 @@ export class ProgressController {
   @Get('courses/:courseId/progress')
   @RequirePermissions('progress.view')
   @ApiOperation({
-    summary: 'Get course progress for the current student (CUR-009)',
+    summary: 'Get course progress for the current studenT',
     description:
       'Returns total/completed lessons, percentage progress, quiz passed status, and overall course completion flag.',
   })
