@@ -1,5 +1,12 @@
 import { plainToInstance } from 'class-transformer';
-import { IsNotEmpty, IsString, validateSync } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsEnum } from 'class-validator';
+import { validateSync } from 'class-validator';
+
+enum NodeEnvironment {
+  DEVELOPMENT = 'development',
+  PRODUCTION = 'production',
+  STAGING = 'staging',
+}
 
 class EnvironmentVariables {
   @IsString()
