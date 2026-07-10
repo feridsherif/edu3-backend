@@ -8,9 +8,12 @@ import { UsersModule } from './users/users.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { InvitationsModule } from './invitations/invitations.module';
 import { RbacModule } from './rbac/rbac.module.js';
+
 import { DepartmentsModule } from './departments/department.module';
 import { CommonModule } from './common/common.module';
 import { CoursesModule } from './courses/courses.module';
+import { AppController } from './app.controller.js';
+import { AppService } from './app.service.js';
 
 @Module({
   imports: [
@@ -28,5 +31,7 @@ import { CoursesModule } from './courses/courses.module';
     DepartmentsModule,
     CoursesModule,
   ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule { }
