@@ -47,6 +47,7 @@ export async function createApp(): Promise<NestExpressApplication> {
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('docs', app, document);
+  SwaggerModule.setup('api/v1/docs', app, document);
 
   await app.init();
   cachedApp = app;
