@@ -56,6 +56,7 @@ export class DepartmentsService {
     await this.auditLogService.log({
       action: 'department.create',
       resourceType: 'department',
+      resourceName: saved.name,
       resourceId: saved.id,
       actorId: actor.id,
       payload: { name: saved.name, code: saved.code },
@@ -84,6 +85,7 @@ export class DepartmentsService {
     await this.auditLogService.log({
       action: 'department.update',
       resourceType: 'department',
+      resourceName: saved.name,
       resourceId: id,
       actorId: actor.id,
       payload: { before, after: { name: saved.name, code: saved.code, description: saved.description } },
@@ -103,6 +105,7 @@ export class DepartmentsService {
     await this.auditLogService.log({
       action: 'department.status.update',
       resourceType: 'department',
+      resourceName: saved.name,
       resourceId: id,
       actorId: actor.id,
       payload: { previousStatus: previous, newStatus: dto.isActive },
