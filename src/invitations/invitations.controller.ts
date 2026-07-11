@@ -30,6 +30,18 @@ export class InvitationsController {
     return this.invitationsService.getInvitation(token);
   }
 
+  
+
+  @Get()
+  @ApiOperation({ summary: 'Get all invitations (Admin only)' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiResponse({ status: 200, description: 'Returns a list of all invitations.' })
+  findAll() {
+    return this.invitationsService.getAllInvitations();
+  }
+
   @Post('accept')
   @ApiOperation({ summary: 'Accept an invitation' })
   @ApiResponse({ status: 200, description: 'Account activated successfully.' })
