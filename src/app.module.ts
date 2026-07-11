@@ -14,6 +14,7 @@ import { CommonModule } from './common/common.module';
 import { CoursesModule } from './courses/courses.module';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
+import { CurriculumModule } from './curriculum/curriculum.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { AppService } from './app.service.js';
     InvitationsModule,
     DepartmentsModule,
     CoursesModule,
+    CurriculumModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -2,6 +2,8 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -43,6 +45,29 @@ export class AuthService {
 
     return { message: 'Registration successful. Please check your email to activate your account.' };
   }
+
+
+async resendActivation(email: string): Promise<{ message: string }> {
+  const user = await this.usersService.findByEmail(email);
+  
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+  
+  if (user.isActive) {
+    throw new BadRequestException('Account is already activated');
+  }
+
+  // Generate new token
+  const activationToken = crypto.randomBytes(32).toString('hex');
+  user.activationToken = activationToken;
+  await this.usersService.save(user);
+
+  // Resend email
+  await this.mailService.sendStudentActivation(user, activationToken);
+
+  return { message: 'Activation email resent successfully. Please check your inbox.' };
+}
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
     const user = await this.usersService.findByEmail(loginDto.email);
@@ -91,6 +116,10 @@ export class AuthService {
   }
 
   async activateAccount(token: string): Promise<{ message: string }> {
+
+    if (!token) {
+    throw new BadRequestException('Activation token is required');
+  }
     const user = await this.usersService.findByActivationToken(token);
 
     if (!user) {
@@ -98,9 +127,8 @@ export class AuthService {
     }
 
     user.isActive = true;
-    user.activationToken = ''; // Use empty string or null depending on how it's defined, but string is better if null is an issue. Since it's nullable, we can use null.
-    // Wait, the column is string. If strictNullChecks is on, might need to handle correctly. Let's use '' or null. Wait, user.entity says `activationToken: string`. So I'll set it to '' or `null as any`. Let's just cast or if `User` has it nullable, use `null`. The entity has it `string`.
-    user.activationToken = '';
+    user.activationToken = ''; 
+    user.emailVerifiedAt = new Date(); // Set the email verification timestamp
 
     await this.usersService.save(user);
 
