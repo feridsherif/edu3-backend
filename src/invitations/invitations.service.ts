@@ -18,7 +18,7 @@ export class InvitationsService {
     private readonly usersService: UsersService,
     private readonly mailService: MailService,
     private readonly departmentsService: DepartmentsService,
-  ) {}
+  ) { }
 
   async createInvitation(dto: CreateInvitationDto) {
     let user = await this.usersService.findByEmail(dto.email);
@@ -27,17 +27,17 @@ export class InvitationsService {
     }
 
     const rolesRequiringDepartment = ['instructor', 'curriculum_manager'];
-if (rolesRequiringDepartment.includes(dto.role) && !dto.departmentId) {
-  throw new BadRequestException(`Department is required for role ${dto.role}`);
-}
+    if (rolesRequiringDepartment.includes(dto.role) && !dto.departmentId) {
+      throw new BadRequestException(`Department is required for role ${dto.role}`);
+    }
 
-// If departmentId is provided, verify it exists and is active
-if (dto.departmentId) {
-  const department = await this.departmentsService.findOne(dto.departmentId);
-  if (!department || !department.isActive) {
-    throw new BadRequestException('Invalid or inactive department');
-  }
-}
+    // If departmentId is provided, verify it exists and is active
+    if (dto.departmentId) {
+      const department = await this.departmentsService.findOne(dto.departmentId);
+      if (!department || !department.isActive) {
+        throw new BadRequestException('Invalid or inactive department');
+      }
+    }
 
     user = await this.usersService.create({
       email: dto.email,
@@ -56,7 +56,7 @@ if (dto.departmentId) {
       token,
       expires_at: expiresAt,
     });
-    
+
     await this.invitationRepository.save(invitation);
     await this.mailService.sendRoleInvitation(user, token);
 
@@ -82,6 +82,13 @@ if (dto.departmentId) {
       firstName: invitation.user.firstName,
       lastName: invitation.user.lastName,
     };
+  }
+
+  async getAllInvitations() {
+    const invitations = await this.invitationRepository.find({
+      relations: { user: true },
+    });
+    return invitations;
   }
 
   async acceptInvitation(dto: AcceptInvitationDto) {
@@ -110,5 +117,40 @@ if (dto.departmentId) {
     await this.invitationRepository.save(invitation);
 
     return { message: 'Account activated successfully. You can now login.' };
+  }
+
+  async resendInvitation(userId: string) {
+    const user = await this.usersService.findByIdWithPermissions(userId);
+    if (!user) throw new NotFoundException('User not found');
+    if (user.isActive) throw new BadRequestException('User relies on their password and is already active.');
+
+    // Look for previous pending invitations
+    const invitation = await this.invitationRepository.findOne({
+      where: { user_id: userId },
+      order: { created_at: 'DESC' }
+    });
+
+    if (invitation && invitation.accepted_at) {
+      throw new BadRequestException('Invitation already accepted');
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    const newInvitation = this.invitationRepository.create({
+      user_id: user.id,
+      token,
+      expires_at: expiresAt,
+    });
+
+    // Remove previous invitations if they exist to keep it clean (optional, but good practice).
+    if (invitation) {
+      await this.invitationRepository.remove(invitation);
+    }
+    await this.invitationRepository.save(newInvitation);
+    await this.mailService.sendRoleInvitation(user, token);
+
+    return { message: 'Invitation resent successfully' };
   }
 }
