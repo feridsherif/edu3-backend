@@ -35,7 +35,7 @@ export class UsersService {
       throw new NotFoundException(`Role '${roleName}' not found`);
     }
 
-    const rolesRequiringDept = ['instructor', 'curriculum_manager'];
+    const rolesRequiringDept = ['Instructor', 'Curriculum Manager'];
     if (rolesRequiringDept.includes(roleName) && !createUserDto.departmentId) {
       throw new BadRequestException(`Department is required for ${roleName}`);
     }
