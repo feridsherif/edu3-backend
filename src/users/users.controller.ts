@@ -30,6 +30,7 @@ import { RequirePermissions } from '../common/decorators/permissions.decorator.j
 import { Role } from '../common/enums/role.enum.js';
 import { CreateInvitationDto } from '../invitations/dto/create-invitation.dto.js';
 import { InvitationsService } from '../invitations/invitations.service.js';
+import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -42,6 +43,17 @@ export class UsersController {
     @Inject(forwardRef(() => InvitationsService))
     private readonly invitationsService: InvitationsService,
   ) { }
+
+ 
+
+@Get('me')
+@RequirePermissions('profile.view')
+@ApiOperation({ summary: 'Get current user profile' })
+@ApiResponse({ status: 200, description: 'User profile returned' })
+@ApiResponse({ status: 401, description: 'Unauthorized' })
+async getProfile(@CurrentUser() user: any) {
+  return this.usersService.findMe(user.id);
+}
 
   @Post('instructors')
   @RequirePermissions('user.instructor.create')

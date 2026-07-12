@@ -1,3 +1,4 @@
+
 import {
   Injectable,
   ConflictException,
@@ -109,6 +110,23 @@ export class UsersService {
     return user;
   }
 
+  //  Get current user profile (for /me endpoint)
+  async findMe(userId: string): Promise<User> {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      relations: {
+        role: { permissions: true },
+        department: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID "${userId}" not found`);
+    }
+
+    return user;
+  }
+
   async findByIdWithPermissions(id: string): Promise<User> {
     const user = await this.usersRepository.findOne({
       where: { id },
@@ -178,7 +196,7 @@ export class UsersService {
 
   async assignDepartment(id: string, departmentId: string): Promise<User> {
     const user = await this.findOne(id);
-    user.department = { id: departmentId } as any; // Typeorm handles relation by Partial object
+    user.department = { id: departmentId } as any;
     return this.usersRepository.save(user);
   }
 
@@ -188,6 +206,9 @@ export class UsersService {
   }
 
   async findByActivationToken(token: string): Promise<User | null> {
+    if (!token) {
+      return null;
+    }
     return this.usersRepository.findOne({ where: { activationToken: token } });
   }
 
