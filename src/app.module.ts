@@ -16,6 +16,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CurriculumModule } from './curriculum/curriculum.module';
 import { EnrollmentsModule } from './enrollments/enrollments.module';
+import { LearningModule } from './learning/learning.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { EnrollmentsModule } from './enrollments/enrollments.module';
     CoursesModule,
     CurriculumModule,
     EnrollmentsModule,
+    LearningModule,
   ],
   controllers: [AppController],
   providers: [AppService],
