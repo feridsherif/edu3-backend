@@ -88,8 +88,8 @@ export async function bootstrap() {
 
   await app.listen(port);
 
-  console.log(`🚀 Application running on: http://localhost:${port}`);
-  console.log(`📚 Swagger docs available at: http://localhost:${port}/api/v1/docs`);
+  console.log(` Application running on: http://localhost:${port}`);
+  console.log(` Swagger docs available at: http://localhost:${port}/api/v1/docs`);
 }
 
 export async function handler(req: Request, res: Response, next?: NextFunction) {
