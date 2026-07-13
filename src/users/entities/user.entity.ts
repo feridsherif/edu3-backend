@@ -49,6 +49,12 @@ export class User {
   @Column({ nullable: true, type: 'timestamp', name: 'email_verified_at' })
   emailVerifiedAt?: Date;
 
+  @Column({ nullable: true })
+  resetPasswordToken: string;
+
+  @Column({ nullable: true, type: 'timestamp' })
+  resetPasswordExpiresAt: Date;
+
   @CreateDateColumn()
   createdAt: Date;
 

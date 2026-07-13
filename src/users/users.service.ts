@@ -6,7 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { User } from './entities/user.entity.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
@@ -126,6 +126,31 @@ export class UsersService {
 
     return user;
   }
+
+  //reset password and forgot password functionalities
+
+async findByResetToken(token: string): Promise<User | null> {
+  return this.usersRepository.findOne({
+    where: {
+      resetPasswordToken: token,
+      resetPasswordExpiresAt: MoreThan(new Date()), // Not expired
+    },
+  });
+}
+
+async setResetToken(userId: string, token: string, expiresAt: Date): Promise<void> {
+  await this.usersRepository.update(userId, {
+    resetPasswordToken: token,
+    resetPasswordExpiresAt: expiresAt,
+  });
+}
+
+async clearResetToken(userId: string): Promise<void> {
+  await this.usersRepository.update(userId, {
+    resetPasswordToken: '',
+    resetPasswordExpiresAt: new Date(0), // Set to epoch to indicate it's expired
+  });
+}
 
   async findByIdWithPermissions(id: string): Promise<User> {
     const user = await this.usersRepository.findOne({
