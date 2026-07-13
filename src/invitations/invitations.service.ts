@@ -26,7 +26,7 @@ export class InvitationsService {
       throw new ConflictException('User already exists');
     }
 
-    const rolesRequiringDepartment = ['instructor', 'curriculum_manager'];
+    const rolesRequiringDepartment = ['Instructor', 'Curriculum Manager'];
     if (rolesRequiringDepartment.includes(dto.role) && !dto.departmentId) {
       throw new BadRequestException(`Department is required for role ${dto.role}`);
     }

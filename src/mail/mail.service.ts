@@ -2,7 +2,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
 import { User } from '../users/entities/user.entity.js';
 
 @Injectable()
@@ -15,7 +14,6 @@ export class MailService {
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
   ) {
-    // Use FRONTEND_URL for invitation links
     this.frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     this.isProduction = this.configService.get<string>('NODE_ENV') === 'production';
     
@@ -27,7 +25,7 @@ export class MailService {
     const activationLink = `${this.frontendUrl}/auth/activate?token=${token}`;
 
     try {
-      const info = await this.mailerService.sendMail({
+      await this.mailerService.sendMail({
         to: user.email,
         subject: 'Welcome to Edu3! Please activate your account',
         text: `Hi ${user.firstName},\n\nPlease click the link below to activate your account:\n${activationLink}`,
@@ -48,17 +46,9 @@ export class MailService {
       });
 
       this.logger.log(` Activation email sent to ${user.email}`);
-
-      // Log preview URL for Ethereal (development only)
-      if (!this.isProduction) {
-        const previewUrl = nodemailer.getTestMessageUrl(info);
-        if (previewUrl) {
-          this.logger.log(` Preview URL: ${previewUrl}`);
-        }
-      }
     } catch (error) {
       this.logger.error(` Error sending activation email to ${user.email}`, error);
-      throw error; // Re-throw so caller knows it failed
+      throw error;
     }
   }
 
@@ -67,7 +57,7 @@ export class MailService {
     const roleName = user.role?.name || 'user';
 
     try {
-      const info = await this.mailerService.sendMail({
+      await this.mailerService.sendMail({
         to: user.email,
         subject: `You've been invited to Edu3 as a ${roleName}`,
         text: `Hi ${user.firstName},\n\nYou have been invited as a ${roleName}. Please click the link below to accept your invitation and set up your password:\n${invitationLink}`,
@@ -89,13 +79,6 @@ export class MailService {
       });
 
       this.logger.log(` Invitation email sent to ${user.email}`);
-
-      if (!this.isProduction) {
-        const previewUrl = nodemailer.getTestMessageUrl(info);
-        if (previewUrl) {
-          this.logger.log(` Preview URL: ${previewUrl}`);
-        }
-      }
     } catch (error) {
       this.logger.error(` Error sending invitation email to ${user.email}`, error);
       throw error;
@@ -106,7 +89,7 @@ export class MailService {
     const resetLink = `${this.frontendUrl}/auth/reset-password?token=${token}`;
 
     try {
-      const info = await this.mailerService.sendMail({
+      await this.mailerService.sendMail({
         to: user.email,
         subject: 'Reset your Edu3 password',
         text: `Hi ${user.firstName},\n\nClick the link below to reset your password:\n${resetLink}`,
@@ -125,15 +108,7 @@ export class MailService {
           </div>
         `,
       });
-
       this.logger.log(` Password reset email sent to ${user.email}`);
-
-      if (!this.isProduction) {
-        const previewUrl = nodemailer.getTestMessageUrl(info);
-        if (previewUrl) {
-          this.logger.log(` Preview URL: ${previewUrl}`);
-        }
-      }
     } catch (error) {
       this.logger.error(` Error sending password reset email to ${user.email}`, error);
       throw error;
