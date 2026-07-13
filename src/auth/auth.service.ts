@@ -15,6 +15,7 @@ import { AuthResponseDto } from './dto/auth-response.dto.js';
 import { JwtPayload } from './strategies/jwt.strategy.js';
 import { MailService } from '../mail/mail.service.js';
 import * as crypto from 'crypto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -134,6 +135,50 @@ async resendActivation(email: string): Promise<{ message: string }> {
 
     return { message: 'Account activated successfully' };
   }
+
+async forgotPassword(email: string): Promise<{ message: string }> {
+  const user = await this.usersService.findByEmail(email);
+
+  if (!user) {
+    // Security: Don't reveal if email exists or not
+    return { message: 'If an account exists, a reset link has been sent.' };
+  }
+
+  // Generate reset token
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date();
+  expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour expiry
+
+  await this.usersService.setResetToken(user.id, token, expiresAt);
+  await this.mailService.sendPasswordReset(user, token);
+
+  return { message: 'If an account exists, a reset link has been sent.' };
+}
+
+async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+  // Validate passwords match
+  if (dto.password !== dto.passwordConfirm) {
+    throw new BadRequestException('Passwords do not match');
+  }
+
+  // Find user by valid reset token
+  const user = await this.usersService.findByResetToken(dto.token);
+
+  if (!user) {
+    throw new BadRequestException('Invalid or expired reset token');
+  }
+
+  // Hash new password
+  user.password = await bcrypt.hash(dto.password, 12);
+  // clear reset token
+  user.resetPasswordToken = '';
+  user.resetPasswordExpiresAt = new Date(0); // Set to epoch to indicate it's expired
+
+  await this.usersService.save(user);
+
+  return { message: 'Password reset successfully. You can now login.' };
+}
+
 
   private generateTokens(payload: JwtPayload): AuthResponseDto {
     const accessSecret = this.configService.get<string>('JWT_ACCESS_SECRET')!;

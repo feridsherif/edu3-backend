@@ -11,7 +11,9 @@ import { MailService } from './mail.service.js';
         transport: {
           host: config.get('SMTP_HOST'),
           port: config.get('SMTP_PORT'),
-          secure: config.get('SMTP_PORT') === '465',
+          secure: config.get('SMTP_SECURE') === 'true',
+          family: 4, 
+
           auth: {
             user: config.get('SMTP_USER'),
             pass: config.get('SMTP_PASS'),

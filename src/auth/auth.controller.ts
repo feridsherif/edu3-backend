@@ -7,6 +7,8 @@ import { RefreshTokenDto } from './dto/refresh-token.dto.js';
 import { AuthResponseDto } from './dto/auth-response.dto.js';
 import { ActivateDto } from './dto/activate-account.dto.js';
 import { ResendActivationTokenDto } from './dto/resend-activation-token.dto.js';
+import { ResetPasswordDto } from './dto/reset-password.dto.js';
+import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -77,4 +79,23 @@ export class AuthController {
   ): Promise<AuthResponseDto> {
     return this.authService.refreshTokens(refreshTokenDto.refreshToken);
   }
+
+
+
+    @Post('forgot-password')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Request password reset email' })
+    @ApiResponse({ status: 200, description: 'Reset link sent if account exists' })
+    async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<{ message: string }> {
+      return this.authService.forgotPassword(dto.email);
+    }
+
+    @Post('reset-password')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Reset password using token' })
+    @ApiResponse({ status: 200, description: 'Password reset successfully' })
+    @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+    async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ message: string }> {
+      return this.authService.resetPassword(dto);
+    }
 }
