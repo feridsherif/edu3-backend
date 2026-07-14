@@ -1,3 +1,4 @@
+
 import {
   Injectable,
   UnauthorizedException,
@@ -26,79 +27,157 @@ export class AuthService {
     private readonly mailService: MailService,
   ) {}
 
-  async register(registerDto: RegisterDto): Promise<{ message: string }> {
-    const existingUser = await this.usersService.findByEmail(registerDto.email);
+  // ═══════════════════════════════════════════════════════════════
+  // IAM-001: User Registration
+  // ═══════════════════════════════════════════════════════════════
 
+  /**
+   * Register a new user account
+   * - Creates user with pending status
+   * - Generates activation token
+   * - Sends activation email
+   * Story: IAM-001
+   */
+  async register(registerDto: RegisterDto): Promise<{ message: string }> {
+    // Check if user already exists
+    const existingUser = await this.usersService.findByEmail(registerDto.email);
     if (existingUser) {
       throw new ConflictException('A user with this email already exists');
     }
 
+    // Create user (pending status)
     const user = await this.usersService.create({
       ...registerDto,
     });
 
+    // Generate activation token
     const activationToken = crypto.randomBytes(32).toString('hex');
     user.activationToken = activationToken;
     user.isActive = false;
 
     await this.usersService.save(user);
+    
+    // Send activation email
     await this.mailService.sendStudentActivation(user, activationToken);
 
-    return { message: 'Registration successful. Please check your email to activate your account.' };
+    return {
+      message: 'Registration successful. Please check your email to activate your account.',
+    };
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // IAM-002: Account Activation
+  // ═══════════════════════════════════════════════════════════════
 
-async resendActivation(email: string): Promise<{ message: string }> {
-  const user = await this.usersService.findByEmail(email);
-  
-  if (!user) {
-    throw new NotFoundException('User not found');
+  /**
+   * Activate user account using email token
+   * - Validates token
+   * - Activates account
+   * - Clears activation token
+   * Story: IAM-002
+   */
+  async activateAccount(token: string): Promise<{ message: string }> {
+    if (!token) {
+      throw new BadRequestException('Activation token is required');
+    }
+
+    const user = await this.usersService.findByActivationToken(token);
+    if (!user) {
+      throw new UnauthorizedException('Invalid activation token');
+    }
+
+    user.isActive = true;
+    user.activationToken = '';
+    user.emailVerifiedAt = new Date();
+
+    await this.usersService.save(user);
+
+    return { message: 'Account activated successfully' };
   }
-  
-  if (user.isActive) {
-    throw new BadRequestException('Account is already activated');
+
+  /**
+   * Resend activation email
+   * - Generates new token
+   * - Sends new email
+   * Story: IAM-002 (Alternative Flow)
+   */
+  async resendActivation(email: string): Promise<{ message: string }> {
+    const user = await this.usersService.findByEmail(email);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.isActive) {
+      throw new BadRequestException('Account is already activated');
+    }
+
+    // Generate new token
+    const activationToken = crypto.randomBytes(32).toString('hex');
+    user.activationToken = activationToken;
+    await this.usersService.save(user);
+
+    // Resend email
+    await this.mailService.sendStudentActivation(user, activationToken);
+
+    return { message: 'Activation email resent successfully. Please check your inbox.' };
   }
 
-  // Generate new token
-  const activationToken = crypto.randomBytes(32).toString('hex');
-  user.activationToken = activationToken;
-  await this.usersService.save(user);
+  // ═══════════════════════════════════════════════════════════════
+  // IAM-003: User Login
+  // ═══════════════════════════════════════════════════════════════
 
-  // Resend email
-  await this.mailService.sendStudentActivation(user, activationToken);
-
-  return { message: 'Activation email resent successfully. Please check your inbox.' };
-}
-
+  /**
+   * Authenticate user and issue JWT tokens
+   * - Validates credentials
+   * - Checks account status
+   * - Updates last login timestamp
+   * - Returns access + refresh tokens
+   * Story: IAM-003
+   */
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
     const user = await this.usersService.findByEmail(loginDto.email);
 
+    // Validate user exists and has password
     if (!user || !user.password) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // Check account status
     if (!user.isActive) {
       throw new UnauthorizedException('Please activate your account before logging in');
     }
 
+    // Validate password
     const isPasswordValid = await bcrypt.compare(
       loginDto.password,
       user.password,
     );
-
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // Update last login
     user.lastLoginAt = new Date();
     await this.usersService.save(user);
 
+    // Generate tokens
     return this.generateTokens({
       sub: user.id,
       email: user.email,
     });
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // IAM-004: Token Refresh
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Refresh access token using refresh token
+   * - Validates refresh token
+   * - Issues new access + refresh tokens
+   * Story: IAM-004
+   */
   async refreshTokens(refreshToken: string): Promise<AuthResponseDto> {
     try {
       const payload = this.jwtService.verify<JwtPayload>(refreshToken, {
@@ -116,70 +195,78 @@ async resendActivation(email: string): Promise<{ message: string }> {
     }
   }
 
-  async activateAccount(token: string): Promise<{ message: string }> {
+  // ═══════════════════════════════════════════════════════════════
+  // IAM-005: Password Reset (Forgot Password)
+  // ═══════════════════════════════════════════════════════════════
 
-    if (!token) {
-    throw new BadRequestException('Activation token is required');
-  }
-    const user = await this.usersService.findByActivationToken(token);
+  /**
+   * Request password reset
+   * - Generates reset token
+   * - Sends reset email
+   * Story: IAM-005
+   */
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    const user = await this.usersService.findByEmail(email);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid activation token');
+      // Security: Don't reveal if email exists or not
+      return { message: 'If an account exists, a reset link has been sent.' };
     }
 
-    user.isActive = true;
-    user.activationToken = ''; 
-    user.emailVerifiedAt = new Date(); // Set the email verification timestamp
+    // Generate reset token (expires in 1 hour)
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1);
 
-    await this.usersService.save(user);
+    await this.usersService.setResetToken(user.id, token, expiresAt);
+    await this.mailService.sendPasswordReset(user, token);
 
-    return { message: 'Account activated successfully' };
-  }
-
-async forgotPassword(email: string): Promise<{ message: string }> {
-  const user = await this.usersService.findByEmail(email);
-
-  if (!user) {
-    // Security: Don't reveal if email exists or not
     return { message: 'If an account exists, a reset link has been sent.' };
   }
 
-  // Generate reset token
-  const token = crypto.randomBytes(32).toString('hex');
-  const expiresAt = new Date();
-  expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour expiry
 
-  await this.usersService.setResetToken(user.id, token, expiresAt);
-  await this.mailService.sendPasswordReset(user, token);
+  /**
+   * Reset password using token
+   * - Validates token
+   * - Validates password confirmation
+   * - Hashes new password
+   * - Clears reset token
+   * Story: IAM-005
+   */
+  async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+    // Validate passwords match
+    if (dto.password !== dto.passwordConfirm) {
+      throw new BadRequestException('Passwords do not match');
+    }
 
-  return { message: 'If an account exists, a reset link has been sent.' };
-}
+    // Find user by valid reset token
+    const user = await this.usersService.findByResetToken(dto.token);
+    if (!user) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
 
-async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
-  // Validate passwords match
-  if (dto.password !== dto.passwordConfirm) {
-    throw new BadRequestException('Passwords do not match');
+    // Hash new password
+    user.password = await bcrypt.hash(dto.password, 12);
+    
+    // Clear reset token (set to null/expired)
+    user.resetPasswordToken = '';
+    user.resetPasswordExpiresAt = new Date(0); // Epoch = expired
+
+    await this.usersService.save(user);
+
+    return { message: 'Password reset successfully. You can now login.' };
   }
 
-  // Find user by valid reset token
-  const user = await this.usersService.findByResetToken(dto.token);
+  // ═══════════════════════════════════════════════════════════════
+  // IAM-006: Token Generation (Private Helper)
+  // ═══════════════════════════════════════════════════════════════
 
-  if (!user) {
-    throw new BadRequestException('Invalid or expired reset token');
-  }
-
-  // Hash new password
-  user.password = await bcrypt.hash(dto.password, 12);
-  // clear reset token
-  user.resetPasswordToken = '';
-  user.resetPasswordExpiresAt = new Date(0); // Set to epoch to indicate it's expired
-
-  await this.usersService.save(user);
-
-  return { message: 'Password reset successfully. You can now login.' };
-}
-
-
+  /**
+   * Generate access and refresh tokens
+   * - Signs JWT with configured secrets
+   * - Uses configured expiration times
+   * Private helper for all auth flows
+   */
   private generateTokens(payload: JwtPayload): AuthResponseDto {
     const accessSecret = this.configService.get<string>('JWT_ACCESS_SECRET')!;
     const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET')!;
