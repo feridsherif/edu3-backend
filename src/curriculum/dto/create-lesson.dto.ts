@@ -1,5 +1,5 @@
 import { IsString, IsNotEmpty, IsOptional, IsInt, IsBoolean } from 'class-validator';
-import { ApiProperty } from 'node_modules/@nestjs/swagger/dist/decorators/api-property.decorator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateLessonDto {
   @ApiProperty({ example:'Lesson 1: Introduction to Programming', description: 'The title of the lesson' })

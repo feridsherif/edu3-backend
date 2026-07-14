@@ -1,5 +1,5 @@
 import { Controller } from '@nestjs/common';
-import { ApiBearerAuth } from 'node_modules/@nestjs/swagger/dist/decorators/api-bearer.decorator';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('curriculum')
 @ApiBearerAuth()
