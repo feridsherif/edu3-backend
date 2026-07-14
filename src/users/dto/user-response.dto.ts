@@ -17,4 +17,9 @@ export class UserResponseDto {
 
   @Exclude()
   activationToken?: string;
+
+  @Exclude()
+  resetPasswordToken?: string;
+  @Exclude()
+  resetPasswordExpiresAt?: Date;
 }
