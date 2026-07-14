@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UserInvitation } from './entities/user-invitation.entity.js';
-import { UsersService } from '../users/users.service.js';
-import { MailService } from '../mail/mail.service.js';
-import { DepartmentsService } from '../departments/department.service.js';
-import { CreateInvitationDto } from './dto/create-invitation.dto.js';
-import { AcceptInvitationDto } from './dto/accept-invitation.dto.js';
+import { UserInvitation } from './entities/user-invitation.entity';
+import { UsersService } from '../users/users.service';
+import { MailService } from '../mail/mail.service';
+import { DepartmentsService } from '../departments/department.service';
+import { CreateInvitationDto } from './dto/create-invitation.dto';
+import { AcceptInvitationDto } from './dto/accept-invitation.dto';
 import * as crypto from 'crypto';
 import * as bcrypt from '../utils/bcrypt';
 
