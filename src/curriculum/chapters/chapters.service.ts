@@ -51,4 +51,55 @@ export class ChaptersService {
 
     return this.chapterRepository.save(chapter);
   }
+
+  async findAllByCourse(courseId: string): Promise<Chapter[]> {
+    return this.chapterRepository.find({
+      where: { courseId },
+      order: { sequenceOrder: 'ASC' },
+    });
+  }
+
+  private validateCourseEditable(course: Course, instructorId: string) {
+    if (course.instructorId !== instructorId) {
+      throw new ForbiddenException('You do not own this course');
+    }
+    if (course.status !== CourseStatus.DRAFT && course.status !== CourseStatus.REJECTED) {
+      throw new ForbiddenException('Course is not in an editable state');
+    }
+  }
+
+  private async getChapterWithCourse(chapterId: string) {
+    const chapter = await this.chapterRepository.findOne({ where: { id: chapterId } });
+    if (!chapter) {
+      throw new NotFoundException('Chapter not found');
+    }
+    const course = await this.courseRepository.findOne({ where: { id: chapter.courseId } });
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+    return { chapter, course };
+  }
+
+  async update(id: string, instructorId: string, updateChapterDto: any): Promise<Chapter> {
+    const { chapter, course } = await this.getChapterWithCourse(id);
+    this.validateCourseEditable(course, instructorId);
+
+    Object.assign(chapter, updateChapterDto);
+    return this.chapterRepository.save(chapter);
+  }
+
+  async remove(id: string, instructorId: string): Promise<void> {
+    const { course } = await this.getChapterWithCourse(id);
+    this.validateCourseEditable(course, instructorId);
+
+    await this.chapterRepository.softDelete(id);
+  }
+
+  async findAllByCourseWithLessons(courseId: string): Promise<Chapter[]> {
+    return this.chapterRepository.find({
+      where: { courseId },
+      order: { sequenceOrder: 'ASC' },
+      relations: { lessons: true },
+    });
+  }
 }
