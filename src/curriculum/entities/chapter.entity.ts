@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Course } from '../../courses/entities/course.entity';
+import { Lesson } from './lesson.entity';
 
 @Entity('chapters')
 export class Chapter {
@@ -27,4 +28,7 @@ export class Chapter {
 
   @DeleteDateColumn({ name: 'deleted_at', nullable: true })
   deletedAt?: Date;
+
+  @OneToMany(() => Lesson, lesson => lesson.chapter)
+  lessons: Lesson[];
 }
