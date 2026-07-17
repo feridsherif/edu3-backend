@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Put, Delete, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Put, Delete, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { LessonsService } from './lessons.service';
 import { CreateLessonDto } from '../dto/create-lesson.dto';
 import { UpdateLessonDto } from '../dto/update-lesson.dto';
@@ -42,5 +42,11 @@ export class LessonsController {
     @CurrentUser('id') userId: string
   ) {
     return this.lessonsService.remove(id, userId);
+  }
+
+  @Get('chapters/:chapterId/lessons')
+  @RequirePermissions('course.view')
+  findAllByChapter(@Param('chapterId') chapterId: string) {
+    return this.lessonsService.findAllByChapter(chapterId);
   }
 }
