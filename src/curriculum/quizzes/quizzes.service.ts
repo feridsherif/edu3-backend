@@ -104,4 +104,64 @@ export class QuizzesService {
     
     return result;
   }
+
+  async findAllByCourse(courseId: string): Promise<Quiz[]> {
+    return this.quizRepository.find({
+      where: { courseId },
+    });
+  }
+
+  async findQuestionsByQuiz(quizId: string): Promise<Question[]> {
+    return this.questionRepository.find({
+      where: { quizId },
+      order: { sequenceOrder: 'ASC' },
+      relations: { answers: true },
+    });
+  }
+
+  private async getQuizWithCourse(quizId: string) {
+    const quiz = await this.quizRepository.findOne({ where: { id: quizId } });
+    if (!quiz) throw new NotFoundException('Quiz not found');
+    const course = await this.courseRepository.findOne({ where: { id: quiz.courseId } });
+    if (!course) throw new NotFoundException('Course not found');
+    return { quiz, course };
+  }
+
+  private async getQuestionWithCourse(questionId: string) {
+    const question = await this.questionRepository.findOne({ where: { id: questionId }, relations: { quiz: true } });
+    if (!question) throw new NotFoundException('Question not found');
+    const course = await this.courseRepository.findOne({ where: { id: question.quiz.courseId } });
+    if (!course) throw new NotFoundException('Course not found');
+    return { question, course };
+  }
+
+  async updateQuiz(id: string, instructorId: string, updateDto: any): Promise<Quiz> {
+    const { quiz, course } = await this.getQuizWithCourse(id);
+    this.validateCourseEditable(course, instructorId);
+
+    Object.assign(quiz, updateDto);
+    return this.quizRepository.save(quiz);
+  }
+
+  async removeQuiz(id: string, instructorId: string): Promise<void> {
+    const { course } = await this.getQuizWithCourse(id);
+    this.validateCourseEditable(course, instructorId);
+
+    await this.quizRepository.softDelete(id);
+  }
+
+  async updateQuestion(id: string, instructorId: string, updateDto: any): Promise<Question> {
+    const { question, course } = await this.getQuestionWithCourse(id);
+    this.validateCourseEditable(course, instructorId);
+
+    Object.assign(question, updateDto);
+    return this.questionRepository.save(question);
+  }
+
+  async removeQuestion(id: string, instructorId: string): Promise<void> {
+    const { course } = await this.getQuestionWithCourse(id);
+    this.validateCourseEditable(course, instructorId);
+
+    await this.questionRepository.softDelete(id);
+  }
 }
