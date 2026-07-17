@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Course } from '../../courses/entities/course.entity';
+import { Question } from './question.entity';
 
 @Entity('quizzes')
 export class Quiz {
@@ -24,4 +25,7 @@ export class Quiz {
 
   @DeleteDateColumn({ name: 'deleted_at', nullable: true })
   deletedAt?: Date;
+
+  @OneToMany(() => Question, question => question.quiz)
+  questions: Question[];
 }
