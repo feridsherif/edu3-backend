@@ -93,4 +93,11 @@ export class LessonsService {
     // Soft delete is used as per user instruction.
     await this.lessonRepository.softDelete(id);
   }
+
+  async findAllByChapter(chapterId: string): Promise<Lesson[]> {
+    return this.lessonRepository.find({
+      where: { chapterId },
+      order: { sequenceOrder: 'ASC' },
+    });
+  }
 }
