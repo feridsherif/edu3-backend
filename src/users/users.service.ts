@@ -10,8 +10,10 @@ import { MoreThan, Repository } from 'typeorm';
 import { User } from './entities/user.entity.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
+import { UserResponseDto } from './dto/user-response.dto.js';
 import * as bcrypt from '../utils/bcrypt';
 import { RbacService } from '../rbac/rbac.service.js';
+import { plainToClass } from 'class-transformer';
 
 @Injectable()
 export class UsersService {
@@ -20,6 +22,23 @@ export class UsersService {
     private readonly usersRepository: Repository<User>,
     private readonly rbacService: RbacService,
   ) { }
+
+
+  private cleanResponse(user: User): UserResponseDto {
+    const response = new UserResponseDto();
+    response.id = user.id;
+    response.email = user.email;
+    response.firstName = user.firstName;
+    response.lastName = user.lastName;
+    response.isActive = user.isActive;
+    response.lastLoginAt = user.lastLoginAt;
+    response.createdAt = user.createdAt;
+    response.updatedAt = user.updatedAt;
+    response.role = user.role;
+    response.department = user.department;
+  
+  return response;
+  }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const existingUser = await this.usersRepository.findOne({
@@ -54,33 +73,38 @@ export class UsersService {
     return this.usersRepository.save(user);
   }
 
+
   async findAll(): Promise<User[]> {
     return this.usersRepository.find({
+  
       relations: { role: { permissions: true }, department: true },
     });
   }
 
-  async findUsersFor(requesterIdOrPayload: any): Promise<User[]> {
+  async findUsersFor(requesterIdOrPayload: any): Promise<UserResponseDto[]> {
     const requester = await this.findByIdWithPermissions(requesterIdOrPayload.id || requesterIdOrPayload.sub);
     if (!requester) return [];
 
     if (requester.role.name === 'admin' || requester.role.name === 'Admin') {
-      return this.findAll();
+      const users = await this.findAll();
+      return users.map(user => this.cleanResponse(user));
     }
     if (requester.role.name === 'curriculum_manager' || requester.role.name === 'Curriculum Manager') {
-      return this.usersRepository.find({
+      const users = await this.usersRepository.find({
         where: { department: { id: requester.department?.id }, role: { name: 'instructor' } },
         relations: { role: { permissions: true }, department: true },
       });
+      return users.map(user => this.cleanResponse(user));
     }
     if (requester.role.name === 'instructor' || requester.role.name === 'Instructor') {
-      return this.usersRepository.find({
+      const users = await this.usersRepository.find({
         where: { role: { name: 'student' } },
         relations: { role: { permissions: true }, department: true }
       });
+      return users.map(user => this.cleanResponse(user));
     }
 
-    return [];
+    return [this.cleanResponse(requester)];
   }
 
   async findOne(id: string): Promise<User> {
@@ -96,7 +120,7 @@ export class UsersService {
     return user;
   }
 
-  async findOneFor(id: string, requesterIdOrPayload: any): Promise<User> {
+  async findOneFor(id: string, requesterIdOrPayload: any): Promise<UserResponseDto> {
     const user = await this.findOne(id);
     const requester = await this.findByIdWithPermissions(requesterIdOrPayload.id || requesterIdOrPayload.sub);
 
@@ -107,11 +131,11 @@ export class UsersService {
       }
     }
 
-    return user;
+    return this.cleanResponse(user);
   }
 
   //  Get current user profile (for /me endpoint)
-  async findMe(userId: string): Promise<User> {
+  async findMe(userId: string): Promise<UserResponseDto> {
     const user = await this.usersRepository.findOne({
       where: { id: userId },
       relations: {
@@ -124,7 +148,7 @@ export class UsersService {
       throw new NotFoundException(`User with ID "${userId}" not found`);
     }
 
-    return user;
+    return this.cleanResponse(user);
   }
 
   //reset password and forgot password functionalities

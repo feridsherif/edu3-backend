@@ -48,4 +48,14 @@ export class InvitationsController {
   accept(@Body() acceptInvitationDto: AcceptInvitationDto) {
     return this.invitationsService.acceptInvitation(acceptInvitationDto);
   }
+
+  @Post(':id/resend')
+  @ApiOperation({ summary: 'Resend an invitation' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiResponse({ status: 200, description: 'Invitation resent successfully.' })
+  resend(@Param('id') id: string) {
+    return this.invitationsService.resendInvitation(id);
+  }
 }
