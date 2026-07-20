@@ -27,4 +27,17 @@ export class AuditLogService {
         });
         await this.auditRepo.save(entry);
     }
+
+    async findAll(options?: {
+        limit?: number;
+        offset?: number;
+    }): Promise<{ data: AuditLog[]; total: number }> {
+        const [data, total] = await this.auditRepo.findAndCount({
+            order: { createdAt: 'DESC' },
+            take: options?.limit ?? 50,
+            skip: options?.offset ?? 0,
+            relations: { actor: true },
+        });
+        return { data, total };
+    }
 }
